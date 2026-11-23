@@ -1,0 +1,56 @@
+{
+ "NCalls": "2,208",
+ "NFailed": "0",
+ "NModels": "2",
+ "NConsumers": "24",
+ "LDShare": "100",
+ "LDMonotone": "27",
+ "MeanCCEI": "0.745",
+ "ExactGARP": "0",
+ "MeanBudgetUse": "100.4",
+ "StaplesElast": "-0.84",
+ "EatingOutElast": "-0.69",
+ "EntertainmentElast": "-0.89",
+ "ElastSpread": "0.30",
+ "EngelHold": "75",
+ "ZeroAnswerShare": "48",
+ "CornerShare": "25",
+ "MeanQElastSpread": "0.29"
+}
+good                 Staples  Milk  Eating out  Rides  Entertainment
+model                                                               
+openai/gpt-oss-120b     0.98  0.97        1.12   1.14           0.70
+openai/gpt-oss-20b      0.95  0.98        1.27   1.31           1.05
+                     consumers  exact_garp  ...  median_ccei  share_ccei_ge_95
+model                                       ...                               
+openai/gpt-oss-120b         24         0.0  ...        0.772             0.083
+openai/gpt-oss-20b          24         0.0  ...        0.744             0.000
+
+[2 rows x 5 columns]
+                     share_goods_neg  consumers_monotone
+model                                                   
+openai/gpt-oss-120b              1.0               0.319
+openai/gpt-oss-20b               1.0               0.216
+                     calls  ...  share_within_5pct
+model                       ...                   
+openai/gpt-oss-120b   1104  ...              0.990
+openai/gpt-oss-20b    1104  ...              0.901
+
+[2 rows x 5 columns]
+                                     nonzero_only  ...  zero_share
+openai/gpt-oss-120b / Staples               -0.91  ...        0.00
+openai/gpt-oss-120b / Milk                  -0.83  ...        0.04
+openai/gpt-oss-120b / Eating out            -0.78  ...        0.08
+openai/gpt-oss-120b / Rides                 -1.09  ...        0.09
+openai/gpt-oss-120b / Entertainment         -0.75  ...        0.18
+openai/gpt-oss-20b / Staples                -0.78  ...        0.02
+openai/gpt-oss-20b / Milk                   -0.54  ...        0.13
+openai/gpt-oss-20b / Eating out             -0.61  ...        0.26
+openai/gpt-oss-20b / Rides                  -0.87  ...        0.33
+openai/gpt-oss-20b / Entertainment          -1.03  ...        0.33
+
+[10 rows x 5 columns]
+persona                all    low  lower_middle  middle   high
+model                                                         
+openai/gpt-oss-120b  0.296  0.250         0.319   0.297  0.319
+openai/gpt-oss-20b   0.213  0.159         0.250   0.243  0.199

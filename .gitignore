@@ -1,0 +1,6 @@
+.env
+__pycache__/
+*.pyc
+results/test*.jsonl
+results_mock/
+.venv/

@@ -1,0 +1,3 @@
+model,consumers,answers_dropped,exact_garp,mean_ccei,median_ccei,share_ccei_ge_95
+openai/gpt-oss-120b,24,0,0.0,0.7765033940474192,0.7723529636859894,0.08333333333333333
+openai/gpt-oss-20b,24,4,0.0,0.7131008356809616,0.7441668659448624,0.0

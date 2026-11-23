@@ -1,0 +1,3 @@
+model,share_goods_neg,consumers_monotone
+openai/gpt-oss-120b,1.0,0.3191666666666667
+openai/gpt-oss-20b,1.0,0.21583333333333332

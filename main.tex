@@ -1,0 +1,174 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb,booktabs,graphicx,xcolor,caption,float,setspace}
+\usepackage[authoryear,round]{natbib}
+\usepackage{xurl}
+\usepackage{hyperref}
+
+\hypersetup{colorlinks=true,linkcolor=blue!50!black,citecolor=blue!50!black,urlcolor=blue!50!black}
+\setstretch{1.08}
+% ---------- numbers filled automatically by analyze.py (results/macros.tex) ----------
+\newcommand{\todo}[1]{\textcolor{red!70!black}{[\textbf{TODO:} #1]}}
+\IfFileExists{results/macros.tex}{\input{results/macros}}{
+  \newcommand{\NCalls}{\todo{n}}\newcommand{\NFailed}{\todo{n}}\newcommand{\NModels}{\todo{n}}\newcommand{\NConsumers}{\todo{n}}
+  \newcommand{\LDShare}{\todo{x}}\newcommand{\LDMonotone}{\todo{x}}\newcommand{\MeanCCEI}{\todo{x}}\newcommand{\ExactGARP}{\todo{x}}
+  \newcommand{\MeanBudgetUse}{\todo{x}}\newcommand{\StaplesElast}{\todo{x}}\newcommand{\EatingOutElast}{\todo{x}}
+  \newcommand{\EntertainmentElast}{\todo{x}}\newcommand{\ElastSpread}{\todo{x}}\newcommand{\EngelHold}{\todo{x}}
+  \newcommand{\ZeroAnswerShare}{\todo{x}}\newcommand{\CornerShare}{\todo{x}}\newcommand{\MeanQElastSpread}{\todo{x}}}
+\newcommand{\tab}[1]{\IfFileExists{results/tables/#1.tex}{\input{results/tables/#1.tex}}{\todo{table \detokenize{#1} (run analyze.py)}}}
+\newcommand{\fig}[3]{\IfFileExists{results/figs/#1.png}{\begin{figure}[!htbp]\centering\includegraphics[width=#2\textwidth]{results/figs/#1.png}\caption{#3}\label{fig:#1}\end{figure}}{\todo{figure \detokenize{#1}}}}
+
+\title{Do AI Consumers Obey the Law of Demand?\\ \large Testing Rationality and Price Sensitivity of LLM Agents with Indian Household Personas}
+\author{\todo{Names of all team members}\\ \todo{Department}, RV College of Engineering, Bengaluru, India}
+\date{\today}
+\begin{document}\maketitle
+
+\begin{abstract}
+Firms and researchers increasingly use large language models (LLMs) as stand-ins for human consumers in market research and demand simulation. We test whether such agents behave like the rational consumer of microeconomic theory in an Indian setting. We prompt \NModels{} open-weight LLMs with four urban Bengaluru household personas, from low to high income, and ask each to split a monthly budget across five everyday goods priced in rupees. Prices and budgets are varied systematically, giving \NCalls{} choices. We test the law of demand, estimate own-price, cross-price and income elasticities, check Engel's law, and test the generalised axiom of revealed preference (GARP) using Afriat's critical cost efficiency index (CCEI). We compare the elasticities with published Indian household estimates. Both models satisfy the law of demand on average: every persona--good own-price elasticity is negative. However, only a minority of individual simulated consumers have demand schedules that never rise with price, no simulated consumer fully satisfies GARP, and the mean CCEI is \MeanCCEI{}, well below the 0.95 benchmark often used for consistent choice. The models also fail to separate necessities from discretionary goods: staples are, if anything, more price-sensitive than eating out, the reverse of Indian household evidence. The results show how far LLM-generated consumers can be trusted for demand analysis and pricing decisions in the Indian context.
+\end{abstract}
+\noindent\textbf{Keywords:} large language models, consumer demand, revealed preference, GARP, price elasticity, simulated agents, India
+
+\section{Introduction}
+Large language models can be given a role, a budget and a set of prices, and then asked what they would buy. This makes them tempting as cheap ``synthetic consumers'' for piloting surveys, testing prices and forecasting demand. For a manager, the question is practical. Before an LLM's answers are used to set a price, one should know whether they follow the basic rules of consumer behaviour at all.
+
+Economic theory gives clear tests. A rational consumer buys less of a good when its price rises (the law of demand). It shifts spending between necessities and luxuries as income changes (Engel's law). Its choices across many budgets can be explained by a single, stable set of preferences (GARP). Whether an LLM also reproduces the \emph{size} of real responses, such as the low price sensitivity of staple foods, is a separate and harder question.
+
+Earlier work has begun to ask these questions in general, mostly Western settings \citep{horton2023,chen2023,brand2023}. We add three things. First, we use an Indian urban setting, with income-differentiated Bengaluru personas and everyday goods priced in rupees. Second, we combine several tests in one controlled design: the law of demand, own- and cross-price elasticities, Engel curves and revealed-preference consistency. Third, we compare two model sizes under identical prompts, check the elasticities against published Indian estimates, and release all prompts, code and raw responses.
+
+\textbf{Research question.} Do LLM agents given Indian income-group personas behave like rational consumers, with downward-sloping demand, consistent preferences and realistic elasticities?
+
+\section{Related Work}
+\textbf{LLMs as simulated economic agents.} \citet{horton2023} argue that LLMs can be treated as implicit computational models of people (``homo silicus''). Like the textbook \emph{homo economicus}, they can be given endowments, information and preferences, and placed in economic scenarios. Their replications of classic behavioural experiments give qualitatively similar results to the originals. \citet{argyle2023} show that conditioning a model on demographic backstories can reproduce response patterns of human subgroups in survey data.
+
+\textbf{LLMs in market research.} \citet{brand2023} use GPT models to answer survey questions as if they were customers. They find responses consistent with basic demand properties, including downward-sloping demand curves and state dependence. In later versions of the work, the authors report that willingness-to-pay estimates from LLMs are sometimes close to human estimates but often inaccurate, and in some cases have the wrong sign. They conclude that LLMs should supplement human studies, not replace them. A recent controlled comparison reaches a similar view. \citet{hoq2026} find that some models reproduce the direction of human experimental effects but differ in effect sizes and interactions, so LLM surrogates are best used as exploratory tools.
+
+\textbf{Rationality of LLM choices.} \citet{chen2023} ask GPT to make budget allocations in four domains (risk, time, social and food choices) and measure consistency with utility maximisation using revealed preference. GPT's choices are largely rational and score higher than human subjects. The scores are robust to sampling randomness and to demographic settings such as age and gender, but are sensitive to how the choice is framed. We follow their revealed-preference approach, but use income personas, a five-good demand system and two open models of different size.
+
+\textbf{Revealed preference.} Revealed preference theory \citep{samuelson1938} tests whether choices could have come from utility maximisation without assuming a functional form. Satisfying GARP is necessary and sufficient for a finite data set to be explained by a well-behaved utility function \citep{afriat1967,varian1982}. The size of violations is measured by Afriat's critical cost efficiency index \citep{afriat1973,varian1990}, which is widely used with human subjects \citep{andreoni2002,choi2014}.
+
+\textbf{Indian household demand.} Demand systems such as AIDS \citep{deaton1980} and its quadratic extension QUAIDS \citep{banks1997} are the standard tools for estimating price and income elasticities from household surveys. For India, \citet{kumar2011} estimate food demand elasticities from National Sample Survey data using QUAIDS and an alternative food characteristic demand system (FCDS). They find that expenditure elasticities are lowest for cereals and highest for horticultural and livestock products, and that staple demand is less affected by price rises than demand for high-value foods. Elasticities for milk from Indian studies are summarised in \citet{nddbmilk}. We use these estimates as an external benchmark in Section~\ref{sec:discussion}.
+
+\section{Theory and Hypotheses}
+A consumer with budget $B$ and prices $p=(p_1,\dots,p_5)$ chooses $x$ to maximise $u(x)$ subject to $p\cdot x\le B$. Standard theory implies: (i) the \emph{law of demand}, own-price elasticity $\varepsilon_{gg}<0$ for ordinary goods; (ii) $|\varepsilon_{gg}|$ is smaller for necessities (staples, milk) than for discretionary goods (eating out, entertainment); (iii) \emph{Engel's law}, the budget share of food falls as income rises; and (iv) choices satisfy GARP. We state four hypotheses about LLM consumers.
+\begin{description}\setlength\itemsep{0pt}
+\item[H1] LLM demand curves slope downward for (almost) every good and persona.
+\item[H2] LLM choices are close to GARP-consistent (CCEI near 1), as in \citet{chen2023}.
+\item[H3] LLM elasticities are too uniform across goods: the gap between necessities and discretionary goods is smaller than theory and Indian estimates suggest.
+\item[H4] Income changes quantities in the direction Engel's law predicts (the staples share falls with income), but persona differences in quantities are weaker than the persona text suggests.
+\end{description}
+
+\section{Experimental Design}
+\subsection{Agents and personas}
+We query the \NModels{} models in Table~\ref{tab:models} through the Groq API. Each call is independent (no memory) at temperature 1.0, so repeated calls act as different simulated consumers. All models are reasoning models. For cost reasons we set reasoning effort to \emph{low} for every model, and fixed this before collecting any data. A third model, Qwen3.8 27B, was tested but dropped before data collection because it used about ten times more reasoning tokens per answer than the gpt-oss models, which the free-tier token limits could not support. Four personas differ in age, occupation, living situation and monthly budget: low (Rs 6{,}000), lower-middle (Rs 12{,}000), middle (Rs 25{,}000) and high (Rs 60{,}000). The full persona text is in Appendix~\ref{app:prompt}. The budgets cover only the five goods below, not total household spending. For context, average monthly per-capita consumption expenditure in urban India in 2023--24 was Rs 6{,}996, ranging from Rs 2{,}376 for the bottom 5\% of the urban population to Rs 20{,}310 for the top 5\% \citep{mospi2024}.
+\begin{table}[!htbp]\centering\small\caption{Models queried and run settings.}\label{tab:models}
+\begin{tabular}{llll}\toprule Model & Provider & Model id & Dates queried\\\midrule
+gpt-oss-20b & Groq & \texttt{openai/gpt-oss-20b} & 22 Nov 2026\\
+gpt-oss-120b & Groq & \texttt{openai/gpt-oss-120b} & 22 Nov 2026\\\midrule
+\multicolumn{4}{l}{Temperature 1.0; reasoning effort low; 6 repetitions per persona; max 4 retries per call.}\\\bottomrule\end{tabular}\end{table}
+
+\subsection{Goods and prices}
+The five goods and base prices are: staples (rice, atta, pulses; Rs 60/kg), milk (Rs 60/L), eating out or food delivery (Rs 250/meal), cab or auto rides (Rs 150/trip) and entertainment outings (Rs 400/outing). Base prices are rounded, stylised values for Bengaluru. For milk, Karnataka raised the retail price of Nandini milk by Rs 8 per litre from 1 November 2026, taking toned milk from Rs 46 to Rs 54 per litre, with higher-fat variants priced above this \citep{nandini2026}. For rides, the official Bengaluru auto-rickshaw fare since 1 August 2025 is Rs 36 for the first 2 km and Rs 18 per km after that \citep{autofare2025}, so Rs 150 matches an auto trip of about 8 km. \todo{Add the source you checked for staples, eating out and entertainment, e.g.\ a grocery app, a delivery app and a cinema booking app, with the date checked.} Staples and milk are expected to be necessities and the other three goods discretionary.
+
+\subsection{Scenarios}
+For each persona and repetition ($r=1,\dots,R$) the agent faces:
+\begin{enumerate}\setlength\itemsep{0pt}
+\item \textbf{Baseline:} base prices and base budget.
+\item \textbf{Own-price variation (20 scenarios):} one good's price is multiplied by $0.5,0.75,1.5$ or $2$, with other prices and the budget fixed.
+\item \textbf{Income variation (5 scenarios):} the budget is multiplied by $0.5,0.75,1.5,2$ or $3$ at base prices.
+\item \textbf{Random budget sets (20 scenarios):} prices are log-normal multiples (sd 0.45, clipped to $[0.4,2.5]$) of base prices, with the budget fixed. The same 20 price vectors are used for every persona, repetition and model. The 20 choices of one repetition form one consumer's data for the GARP test.
+\end{enumerate}
+This gives 46 prompts per persona and repetition. The prompt tells the agent to spend its whole budget because unspent money is lost, which supports local non-satiation, the condition needed for the GARP test. Prompts ask only for a JSON object of quantities, so the model's reasoning is not part of the data. Unparsable answers are retried up to four times and then dropped (\NFailed{} of \NCalls{} calls). On average the chosen bundles use \MeanBudgetUse\% of the budget (Table~\ref{tab:data_quality}). Expenditure is always computed from the chosen bundle, not assumed equal to the budget.
+
+\section{Empirical Strategy}
+\textbf{Own-price elasticity.} For each model, persona and good we estimate $\ln q_{gi}=a+\varepsilon_{g}\ln p_{gi}+u_{i}$ over the five price points, with 95\% intervals from a bootstrap over repetitions. Because answers with zero quantity cannot enter a log regression, we also report a second estimate based on the log of the \emph{mean} quantity at each price point, which keeps zeros. We report the share of zero answers for each good and persona, and the share of corner solutions, defined as answers where one good takes more than 80\% of spending. A positive slope would be a Giffen pattern. We also report, for each simulated consumer, whether the demand schedule never rises with price (5\% tolerance).
+
+\textbf{Cross-price elasticity.} The same regression for the quantity of good $j$ on the price of good $i\neq j$, with persona-demeaned logs. Because the budget is fixed and fully spent, cross effects mix substitution and income effects, so we interpret signs, not magnitudes.
+
+\textbf{Income elasticity and Engel curves.} $\ln q_{g}=a+\eta_g\ln B+u$ at base prices; $\eta_g<0$ means an inferior good, $0<\eta_g<1$ a necessity and $\eta_g>1$ a luxury. Engel's law is checked from the slope of the staples budget share on $\ln B$ within each persona.
+
+\textbf{Rationality (GARP, CCEI).} For observations $(p^t,x^t)$, $t=1,\dots,20$, bundle $x^s$ is directly revealed weakly preferred to $x^t$ if $p^s\!\cdot x^s\ge p^s\!\cdot x^t$; $R$ is the transitive closure. GARP is violated if $x^sRx^t$ and $p^t\!\cdot x^t>p^t\!\cdot x^s$. The CCEI is the largest $e\in[0,1]$ such that the data satisfy GARP after multiplying each expenditure by $e$ \citep{afriat1973,varian1990}. A CCEI of 1 means fully consistent choices. We find it by bisection and report the share of consumers with CCEI of at least 0.95. The implementation is checked on hand-built data with known violations. Corner solutions can make GARP easier to pass, so we read CCEI together with the corner-solution share.
+
+\textbf{Consistency.} The coefficient of variation of chosen quantities across repeated identical baseline prompts.
+
+\section{Results}
+We collected \NCalls{} choices, 1{,}104 from each model (4 personas, 6 repetitions, 46 scenarios). All \NCalls{} answers could be parsed (\NFailed{} failures). On average the chosen bundles used \MeanBudgetUse\% of the budget (Table~\ref{tab:data_quality}). gpt-oss-120b stayed close to the budget in every answer (between 83\% and 108\%), with 99\% of answers within 5\% of it. gpt-oss-20b was less reliable: 90\% of its answers were within 5\% of the budget, but it also gave two empty bundles, one bundle costing 17.6 times the budget, two costing 2 to 3 times the budget, and five that spent less than half of it. We keep all answers in the main analysis and report a robustness check below.
+\tab{data_quality}
+
+\subsection{Law of demand}
+At the aggregate level, both models obey the law of demand: for every model, persona and good, the estimated own-price elasticity is negative (Table~\ref{tab:law_of_demand}). This matches earlier findings that LLM survey responses produce downward-sloping demand curves \citep{brand2023}. At the level of a single simulated consumer, the picture is weaker. Only 32\% of gpt-oss-120b consumers and 22\% of gpt-oss-20b consumers have a demand schedule that never rises with price (5\% tolerance). The downward slope therefore appears when answers are averaged, but individual answer sets are noisy.
+\tab{law_of_demand}\fig{demand_curves}{1.0}{Mean quantity relative to baseline versus price relative to baseline (log scales), averaged over personas; the dotted line is unit elasticity.}
+
+\subsection{Own-price elasticities}
+Table~\ref{tab:own_price} reports elasticities estimated on non-zero answers, and Table~\ref{tab:own_price_mean} adds the estimate based on mean quantities, which keeps zero answers. For gpt-oss-120b, the mean-quantity elasticities are $-0.97$ for staples, $-0.96$ for milk, $-0.70$ for eating out, $-1.13$ for rides and $-0.71$ for entertainment. For gpt-oss-20b they are $-0.77$, $-0.73$, $-0.47$, $-0.56$ and $-0.96$. All lie roughly between $-0.5$ and $-1.1$. There is no clear gap between necessities and discretionary goods. For gpt-oss-120b, staples and milk are in fact more price-sensitive than eating out and entertainment. The two estimation methods give similar results for gpt-oss-120b, but differ for gpt-oss-20b, where zero answers are more common; for rides, the estimate moves from $-0.87$ (non-zero answers) to $-0.56$ (mean quantities). The gpt-oss-20b intervals are also wide, for example $[-0.95, -0.07]$ for eating out.
+\tab{own_price}\tab{own_price_mean}\fig{elasticity_heatmap}{0.7}{Own-price elasticities by model and good.}
+\tab{own_price_by_persona}
+
+\subsection{Zero quantities and corner solutions}
+Zero answers are common. Across all answers, \ZeroAnswerShare\% buy none of at least one good. Zero shares are lowest for staples (4--8\% by model and persona) and highest for entertainment (35--50\%), eating out (23--47\%) and rides (30--43\%) (Table~\ref{tab:zero_share}). Corner solutions, where one good takes more than 80\% of spending, make up 30\% of gpt-oss-120b answers and 21\% of gpt-oss-20b answers (Table~\ref{tab:corner_share}). Many of these place almost the whole budget on staples or milk.
+\tab{zero_share}\tab{corner_share}
+
+\subsection{Cross-price effects}
+Most cross-price effects are small, and the two models give opposite signs for 13 of the 20 pairs. Where both models agree, milk and entertainment act as complements in both directions (negative signs), while a higher milk price raises the demand for staples and a higher eating-out price raises the demand for entertainment (positive signs, substitutes).
+\tab{cross_price_all}
+
+\subsection{Income effects and Engel's law}
+Income elasticities at base prices (Table~\ref{tab:income}) are close to 1 for staples (0.98 for gpt-oss-120b and 0.95 for gpt-oss-20b) and milk (0.97 and 0.98), and above 1 for eating out (1.12 and 1.27) and rides (1.14 and 1.31). Entertainment differs between models (0.70 and 1.05). The ordering is broadly as theory expects, with eating out and rides behaving as luxuries, but staples and milk are only just below unit elasticity, so they are barely treated as necessities. Within personas, the staples share of spending falls as the budget rises in \EngelHold\% of model--persona combinations. Across personas, gpt-oss-120b's baseline staples share falls from 38\% for the low-income persona to 30\% for the high-income persona, a small change for a tenfold difference in budget. gpt-oss-20b shows no clear pattern (35\%, 58\%, 22\% and 34\%). These baseline shares rest on only six answers per persona.
+\tab{income}\tab{staples_share_by_persona}\fig{engel_curves}{1.0}{Quantity relative to baseline versus budget relative to baseline (log scales).}
+
+\subsection{Rationality}
+No simulated consumer satisfies GARP exactly (Table~\ref{tab:garp}). The mean CCEI is 0.78 for gpt-oss-120b (median 0.77) and 0.71 for gpt-oss-20b (median 0.74). Only 8\% of gpt-oss-120b consumers and none of the gpt-oss-20b consumers reach a CCEI of 0.95. In other words, to make a typical consumer's 20 choices consistent, its spending would have to be discounted by about a quarter. As a robustness check, we repeat the test after dropping budget-set answers that spend less than half or more than twice the budget. This removes no gpt-oss-120b answers and 4 gpt-oss-20b answers, and leaves the results unchanged: the mean CCEI is still 0.78 for gpt-oss-120b and 0.71 for gpt-oss-20b, and the share of consumers at or above 0.95 is still 8\% and 0\%. The low consistency is therefore not driven by the few answers far from the budget.
+\fig{ccei}{0.6}{CCEI by model (one observation per simulated consumer).}
+\tab{garp}\tab{garp_robust}\tab{ccei_by_persona}
+
+\subsection{Variability across repeated prompts}
+Identical baseline prompts give very different bundles. The coefficient of variation of quantities across repetitions ranges from 0.38 to 0.85 for gpt-oss-120b and from 0.51 to 1.30 for gpt-oss-20b, and is highest for entertainment in both models (Table~\ref{tab:variability}). These figures rest on six answers per persona.
+\tab{variability}
+
+\section{Discussion}\label{sec:discussion}
+\textbf{H1 (law of demand): supported on average, not for individuals.} Averaged over many answers, both models buy less of a good when its price rises. A single simulated consumer, however, often does not. A firm using LLM agents to ask ``what happens to demand if we raise the price'' would get the right direction only if it averages many answers.
+
+\textbf{H2 (GARP consistency): rejected.} Our results differ from \citet{chen2023}, who found GPT's budget choices largely consistent with utility maximisation. Several features of our design may explain the gap, and we cannot separate them: each choice is an independent call at temperature 1.0 with no memory of earlier choices; consumers choose over five goods with persona descriptions; we use different, smaller open models at low reasoning effort; and gpt-oss-20b produced some answers far from the budget. \citet{chen2023} also report that rationality is sensitive to framing, so consistency found in one setting does not carry over to another. On average, gpt-oss-120b was more consistent than gpt-oss-20b (higher CCEI, closer budget use and lower mean variability), which suggests that model size matters.
+
+\textbf{H3 (uniform elasticities): supported.} Both models give elasticities in a narrow band, and staples are, if anything, more price-sensitive than eating out and entertainment. This is the reverse of what theory and Indian evidence suggest, and it is the main departure from economic evidence.
+
+\textbf{H4 (Engel's law and persona effects): partly supported.} Eating out and rides behave as luxuries and the staples share falls with the budget in most cases, but the persona changes the staples share much less than real income differences do.
+
+\textbf{Comparison with Indian household estimates.} Published Indian estimates give a direction to compare against. Cereals have the lowest expenditure elasticities and the least price-sensitive demand among food groups \citep{kumar2011}. For milk, reported all-India expenditure elasticities range from 0.43 (FCDS) to 1.64 (QUAIDS), and own-price elasticities from $-0.62$ to $-1.04$ \citep[as summarised in][]{nddbmilk}. \todo{Verify these milk numbers in the Kumar et al.\ (2011) tables.} The models' mean-quantity milk elasticities ($-0.73$ to $-0.96$) fall inside this range. Their staples elasticities ($-0.77$ to $-0.97$) suggest far more price sensitivity than the low price sensitivity of cereals reported in Indian data, and their staples income elasticities near 1 do not match cereals' low expenditure elasticity. These benchmarks come from household-level food demand systems, while our agents allocate a fixed budget across five goods for one person, so the comparison is about direction and ordering, not exact values.
+
+\textbf{Implications for managers.} The results support using LLM agents as a supplement to human research, not a substitute, as \citet{brand2023} and \citet{hoq2026} also conclude. LLM consumers can give a rough sense of the direction of demand responses when many answers are averaged. They are not reliable for setting prices of essential goods, because they overstate how price-sensitive staples are. They are also not reliable for segmenting customers by income, because personas change behaviour only slightly, or for modelling individual customers, because single answer sets are inconsistent.
+
+\section{Limitations}
+(i) There is no human comparison group, so we describe consistency with theory, not human-likeness. (ii) Personas and prices are stylised; results may depend on prompt wording and price levels, and LLM rationality is known to be sensitive to framing \citep{chen2023}. (iii) All models were run at low reasoning effort for cost reasons; results may differ at higher settings. (iv) Models change over time; results apply to the versions and dates in Table~\ref{tab:models}. (v) Temperature sampling produces variation that comes from decoding, not from preferences. (vi) Fixed-budget, five-good choices leave out saving, credit and household decision-making. (vii) Zero quantities and corner solutions affect log-based elasticities; we report both estimates, but neither is perfect. (viii) A fully consistent agent can still have unrealistic elasticities, so GARP alone does not validate a simulation. (ix) The prompt requires the whole budget to be spent on five goods, so personas with large budgets must place leftover money somewhere; this can produce very large quantities of cheap goods such as staples or milk for high-income personas, which affects quantity-based comparisons across personas. (x) Both models come from one family (gpt-oss), so differences between model families are not tested. (xi) With six repetitions per persona, baseline-based measures (staples shares and variability) are noisy.
+
+\section{Conclusion}
+We asked whether LLM agents with Indian household personas behave like rational consumers. On average they do follow the law of demand, but they are not consistent at the level of individual consumers: no simulated consumer satisfied GARP, and the mean CCEI was \MeanCCEI{}. They also treat staples as at least as price-sensitive as eating out, unlike Indian household evidence, and their income personas change behaviour only slightly. For managers, LLM consumers are useful for quick, averaged ``what-if'' checks, but they should not replace real demand data when pricing essential goods or targeting income segments.
+
+\appendix
+\section{Prompt and personas}\label{app:prompt}
+\small
+\begin{verbatim}
+You are role-playing a consumer in urban India (Bengaluru).
+Profile: {persona}.
+
+For the coming month you have a fixed budget of Rs {budget} to spend only on
+the five goods below. Decide how many units of each good to buy. You do not
+have to buy every good, quantities may be decimals, and any money you do not
+spend is lost, so spend your whole budget.
+
+Prices:
+- Staples (rice, atta, pulses), per kg: Rs {p1}
+- Milk, per litre: Rs {p2}
+- Eating out / food delivery, per meal: Rs {p3}
+- Cab or auto ride, per trip: Rs {p4}
+- Entertainment (movie, outing), per outing: Rs {p5}
+
+Reply with ONLY a JSON object of the form {"staples": <number>, "milk": <number>,
+"eating_out": <number>, "ride": <number>, "entertainment": <number>} giving the
+quantity of each good you choose. No explanation.
+\end{verbatim}
+Personas: low -- 24-year-old hostel resident on a tight allowance from a low-income family; lower-middle -- 30-year-old salaried employee sending money home; middle -- 32-year-old software professional in a rented flat; high -- 38-year-old senior manager in an owned apartment (full text in \texttt{config.py}).
+\section{Reproducibility}
+Code (\texttt{config.py}, \texttt{experiment.py}, \texttt{analyze.py}), raw responses with token usage, and analysis tables are available at \todo{GitHub link}.
+
+\bibliographystyle{plainnat}\bibliography{refs}
+\end{document}
